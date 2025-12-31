@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conferidor Mega-Sena</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b3d2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <style>
+    :root { --bg:#0b1410; --card:#111c16; --muted:#9bb3a6; --text:#e9f3ee; --accent:#2dd4bf; --danger:#fb7185; --ok:#34d399; }
+    * { box-sizing: border-box; font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial; }
+    body { margin:0; background:linear-gradient(180deg,#07110d,#0b1410); color:var(--text); }
+    header { position: sticky; top:0; backdrop-filter: blur(10px); background: rgba(7,17,13,.7); border-bottom:1px solid rgba(255,255,255,.06); padding:14px 16px; z-index: 10;}
+    h1 { margin:0; font-size:16px; letter-spacing:.2px; }
+    main { padding: 16px; max-width: 820px; margin: 0 auto; }
+    .grid { display:grid; grid-template-columns: 1fr; gap:12px; }
+    .card { background: rgba(17,28,22,.9); border:1px solid rgba(255,255,255,.08); border-radius: 16px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.22); }
+    .row { display:flex; gap:10px; flex-wrap: wrap; align-items: center; }
+    label { font-size: 12px; color: var(--muted); display:block; margin-bottom: 6px; }
+    input, select, button, textarea {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      outline: none;
+    }
+    input::placeholder, textarea::placeholder { color: rgba(233,243,238,.4); }
+    button { cursor: pointer; background: rgba(45,212,191,.14); border-color: rgba(45,212,191,.35); }
+    button:hover { background: rgba(45,212,191,.20); }
+    .btn2 { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12); }
+    .danger { background: rgba(251,113,133,.12); border-color: rgba(251,113,133,.35); }
+    .pill { display:inline-flex; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); color:var(--muted); font-size: 12px; gap:8px; align-items:center;}
+    .nums { display:flex; gap:6px; flex-wrap: wrap; }
+    .ball { width: 32px; height: 32px; border-radius: 999px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); font-weight:600; }
+    .hit { border-color: rgba(52,211,153,.55); background: rgba(52,211,153,.12); }
+    .miss { opacity: .75; }
+    .small { font-size: 12px; color: var(--muted); }
+    .split { display:grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 720px){ .split { grid-template-columns: 1.2fr .8fr; } }
+    .list { display:flex; flex-direction: column; gap: 10px; }
+    .sep { height:1px; background: rgba(255,255,255,.08); margin: 10px 0; }
+    .toast { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Conferidor Mega-Sena (local no iPhone)</h1>
+</header>
+
+<main class="grid">
+  <section class="card">
+    <div class="split">
+      <div>
+        <div class="row">
+          <div style="flex:1; min-width: 180px;">
+            <label>Nome da aposta</label>
+            <input id="betName" placeholder="Ex: Jogo 1 / Surpresinha / etc" />
+          </div>
+
+          <div style="width: 220px; min-width: 180px;">
+            <label>Grupo (para compartilhar)</label>
+            <input id="betGroup" placeholder="Ex: Família / Trabalho / Amigos" list="groupsDatalist" />
+            <datalist id="groupsDatalist"></datalist>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <label>Números da aposta (6 a 10 números, de 1 a 60)</label>
+        <div class="row">
+          <input id="betNumbers" placeholder="Ex: 01 07 12 23 34 45 50 51 59" />
+        </div>
+        <div class="row">
+          <button id="addBetBtn">Salvar aposta</button>
+          <button id="clearAllBtn" class="danger" style="width: 220px;">Apagar tudo</button>
+        </div>
+        <div class="toast" id="msg"></div>
+      </div>
+
+      <div>
+        <label>Resultado (6 números)</label>
+        <input id="drawNumbers" placeholder="Ex: 05 11 19 27 33 52" />
+        <div class="row">
+          <button id="saveDrawBtn" class="btn2">Salvar resultado</button>
+          <button id="checkBtn">Conferir</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <label>Filtro para compartilhar</label>
+        <select id="shareGroupSelect"></select>
+        <div class="row">
+          <button id="shareBtn">Compartilhar texto</button>
+          <button id="copyBtn" class="btn2">Copiar texto</button>
+        </div>
+        <p class="small">Dica: você também pode tirar print e compartilhar a tela pelo iOS.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content: space-between;">
+      <div class="pill"><span>📌</span><span>Apostas salvas</span></div>
+      <div class="pill" id="drawPill">🎯 Resultado: (não salvo)</div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="list" id="betsList"></div>
+  </section>
+
+  <section class="card">
+    <div class="pill"><span>📤</span><span>Texto para compartilhar (com filtro)</span></div>
+    <div class="sep"></div>
+    <textarea id="shareText" rows="8" placeholder="Depois de conferir, o texto aparece aqui..."></textarea>
+    <div class="small">Se o “Compartilhar” não abrir, use “Copiar” e cole no WhatsApp/Telegram.</div>
+  </section>
+</main>
+
+<script>
+  // ====== Storage helpers ======
+  const LS_KEY = "mega_confere_v1";
+  const state = loadState();
+
+  function loadState(){
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return { bets: [], draw: [] };
+      const parsed = JSON.parse(raw);
+      return { bets: parsed.bets ?? [], draw: parsed.draw ?? [] };
+    } catch {
+      return { bets: [], draw: [] };
+    }
+  }
+  function saveState(){
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  }
+
+  // ====== Parsing / validation ======
+  function parseNumbers(str){
+    const parts = (str || "").trim()
+      .replace(/[,;]+/g, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+
+    const nums = parts.map(p => Number(p)).filter(n => Number.isFinite(n));
+    return nums;
+  }
+
+  function validateSet(nums, {minLen, maxLen, label}){
+    if(nums.length < minLen || nums.length > maxLen){
+      return `${label}: precisa ter entre ${minLen} e ${maxLen} números.`;
+    }
+    for(const n of nums){
+      if(n < 1 || n > 60) return `${label}: números devem estar entre 1 e 60.`;
+      if(!Number.isInteger(n)) return `${label}: use apenas números inteiros.`;
+    }
+    const unique = new Set(nums);
+    if(unique.size !== nums.length) return `${label}: não pode repetir número.`;
+    return null;
+  }
+
+  function fmt(n){ return String(n).padStart(2,"0"); }
+
+  function uniqueSorted(nums){
+    return [...new Set(nums)].sort((a,b)=>a-b);
+  }
+
+  // ====== UI elements ======
+  const el = (id) => document.getElementById(id);
+  const msgEl = el("msg");
+  const betsListEl = el("betsList");
+  const drawPillEl = el("drawPill");
+  const shareTextEl = el("shareText");
+
+  // ====== Render ======
+  function render(){
+    // Draw pill
+    if(state.draw.length === 6){
+      drawPillEl.textContent = `🎯 Resultado: ${state.draw.map(fmt).join(" ")}`;
+    } else {
+      drawPillEl.textContent = "🎯 Resultado: (não salvo)";
+    }
+
+    // Groups list / select
+    const groups = uniqueSorted(state.bets.map(b => (b.group || "Sem grupo").trim() || "Sem grupo"));
+    const datalist = el("groupsDatalist");
+    datalist.innerHTML = "";
+    groups.forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g;
+      datalist.appendChild(opt);
+    });
+
+    const shareSel = el("shareGroupSelect");
+    const current = shareSel.value || "Todos";
+    shareSel.innerHTML = "";
+    ["Todos", ...groups].forEach(g => {
+      const o = document.createElement("option");
+      o.value = g;
+      o.textContent = g;
+      shareSel.appendChild(o);
+    });
+    shareSel.value = (["Todos", ...groups].includes(current) ? current : "Todos");
+
+    // Bets list
+    betsListEl.innerHTML = "";
+    if(state.bets.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "small";
+      empty.textContent = "Nenhuma aposta salva ainda.";
+      betsListEl.appendChild(empty);
+      return;
+    }
+
+    // If already checked, compute hits; else show basic
+    const drawSet = new Set(state.draw);
+    const hasDraw = state.draw.length === 6;
+
+    state.bets.forEach((b) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.background = "rgba(0,0,0,.12)";
+      card.style.borderRadius = "14px";
+
+      const top = document.createElement("div");
+      top.className = "row";
+      top.style.justifyContent = "space-between";
+
+      const left = document.createElement("div");
+      left.innerHTML = `<div style="font-weight:700">${escapeHtml(b.name || "Aposta")}</div>
+                        <div class="small">Grupo: ${escapeHtml(b.group || "Sem grupo")} • ${b.numbers.length} números</div>`;
+
+      const right = document.createElement("div");
+      right.className = "row";
+      right.style.gap = "8px";
+      right.style.alignItems = "center";
+
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "Excluir";
+      delBtn.className = "danger";
+      delBtn.style.width = "110px";
+      delBtn.onclick = () => {
+        state.bets = state.bets.filter(x => x.id !== b.id);
+        saveState(); render(); buildShareText();
+      };
+
+      const badge = document.createElement("div");
+      badge.className = "pill";
+
+      let hits = 0;
+      if(hasDraw){
+        hits = b.numbers.filter(n => drawSet.has(n)).length;
+        badge.innerHTML = `<span>✅</span><span>${hits} acerto(s)</span>`;
+        badge.style.borderColor = hits >= 4 ? "rgba(52,211,153,.55)" : "rgba(255,255,255,.12)";
+      } else {
+        badge.innerHTML = `<span>ℹ️</span><span>Sem resultado</span>`;
+      }
+
+      right.appendChild(badge);
+      right.appendChild(delBtn);
+
+      top.appendChild(left);
+      top.appendChild(right);
+
+      const nums = document.createElement("div");
+      nums.className = "nums";
+      b.numbers
+        .slice()
+        .sort((a,b)=>a-b)
+        .forEach(n => {
+          const ball = document.createElement("div");
+          ball.className = "ball";
+          if(hasDraw && drawSet.has(n)) ball.classList.add("hit");
+          ball.textContent = fmt(n);
+          nums.appendChild(ball);
+        });
+
+      card.appendChild(top);
+      card.appendChild(document.createElement("div")).className="sep";
+      card.appendChild(nums);
+
+      betsListEl.appendChild(card);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  function setMsg(text, kind="info"){
+    msgEl.textContent = text;
+    msgEl.style.color = kind==="error" ? "var(--danger)" : "var(--muted)";
+  }
+
+  // ====== Actions ======
+  el("addBetBtn").onclick = () => {
+    const name = el("betName").value.trim() || `Aposta ${state.bets.length+1}`;
+    const group = (el("betGroup").value.trim() || "Sem grupo");
+    const nums = uniqueSorted(parseNumbers(el("betNumbers").value));
+
+    const err = validateSet(nums, {minLen:6, maxLen:10, label:"Aposta"});
+    if(err){ setMsg(err, "error"); return; }
+
+    state.bets.unshift({
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(),
+      name, group,
+      numbers: nums
+    });
+    saveState();
+    el("betName").value = "";
+    el("betNumbers").value = "";
+    setMsg("Aposta salva ✅");
+    render();
+    buildShareText();
+  };
+
+  el("saveDrawBtn").onclick = () => {
+    const nums = uniqueSorted(parseNumbers(el("drawNumbers").value));
+    const err = validateSet(nums, {minLen:6, maxLen:6, label:"Resultado"});
+    if(err){ setMsg(err, "error"); return; }
+
+    state.draw = nums;
+    saveState();
+    setMsg("Resultado salvo 🎯");
+    render();
+    buildShareText();
+  };
+
+  el("checkBtn").onclick = () => {
+    if(state.draw.length !== 6){
+      setMsg("Salve o resultado (6 números) antes de conferir.", "error");
+      return;
+    }
+    setMsg("Conferido! Veja os acertos em cada aposta ✅");
+    render();
+    buildShareText();
+  };
+
+  el("clearAllBtn").onclick = () => {
+    if(!confirm("Apagar TODAS as apostas e o resultado?")) return;
+    state.bets = [];
+    state.draw = [];
+    saveState();
+    setMsg("Tudo apagado.");
+    render();
+    buildShareText();
+  };
+
+  el("shareGroupSelect").onchange = () => buildShareText();
+
+  function buildShareText(){
+    const sel = el("shareGroupSelect").value || "Todos";
+    const hasDraw = state.draw.length === 6;
+    const drawLine = hasDraw ? `Resultado: ${state.draw.map(fmt).join(" ")}\n` : "Resultado: (não informado)\n";
+
+    const bets = state.bets.filter(b => sel === "Todos" ? true : (b.group || "Sem grupo") === sel);
+
+    const drawSet = new Set(state.draw);
+    const lines = [];
+    lines.push("🎰 Conferência Mega-Sena");
+    if(sel !== "Todos") lines.push(`📌 Grupo: ${sel}`);
+    lines.push(drawLine.trim());
+    lines.push("Apostas:");
+
+    if(bets.length === 0){
+      lines.push("- (nenhuma aposta nesse grupo)");
+    } else {
+      bets
+        .slice()
+        .reverse()
+        .forEach((b, idx) => {
+          const nums = b.numbers.slice().sort((a,b)=>a-b);
+          const hits = hasDraw ? nums.filter(n => drawSet.has(n)).length : 0;
+          const hitsTxt = hasDraw ? ` — ${hits} acerto(s)` : "";
+          lines.push(`- ${b.name}: ${nums.map(fmt).join(" ")}${hitsTxt}`);
+        });
+    }
+
+    const txt = lines.join("\n");
+    shareTextEl.value = txt;
+    return txt;
+  }
+
+  el("copyBtn").onclick = async () => {
+    const txt = buildShareText();
+    try {
+      await navigator.clipboard.writeText(txt);
+      setMsg("Texto copiado ✅");
+    } catch {
+      // fallback
+      shareTextEl.focus();
+      shareTextEl.select();
+      document.execCommand("copy");
+      setMsg("Texto copiado ✅");
+    }
+  };
+
+  el("shareBtn").onclick = async () => {
+    const txt = buildShareText();
+    if(navigator.share){
+      try {
+        await navigator.share({ text: txt });
+        setMsg("Compartilhado ✅");
+        return;
+      } catch {
+        // user canceled or not supported in that context
+      }
+    }
+    // fallback: copy
+    try {
+      await navigator.clipboard.writeText(txt);
+      setMsg("Compartilhar não disponível aqui — copiei o texto ✅");
+    } catch {
+      setMsg("Compartilhar não disponível aqui. Use 'Copiar texto'.", "error");
+    }
+  };
+
+  // ====== PWA register ======
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(()=>{});
+    });
+  }
+
+  // Initial render
+  render();
+  buildShareText();
+</script>
+</body>
+</html>
